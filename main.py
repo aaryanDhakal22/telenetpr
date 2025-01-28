@@ -65,5 +65,6 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("hello", hello))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 app.add_handler(MessageHandler(filters.Document.ALL, printer))
+print("Bot is listening")
 app.run_polling(allowed_updates=Update.ALL_TYPES)
 
