@@ -17,7 +17,6 @@ def with_auth(func):
         print("Checking Auth")
         if str(args[0].effective_user.id) in [EBID,ADID]:
             user = await func(*args, **kwargs)
-            print(f"{user.username} is authenticated")
         else:   
             await args[0].message.reply_text(f'User Not Authenticated')
 
@@ -30,13 +29,31 @@ async def hello(update: Update,context : ContextTypes.DEFAULT_TYPE) -> User:
 
 @with_auth
 async def printer(update:Update,context: ContextTypes.DEFAULT_TYPE) -> None:
-    print("printing media")
-    await update.message.reply_text(f"Printer is printing") 
     document = await update.message.document.get_file()
     file_name = datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+document.file_path.split("/")[-1]
-    await document.download_to_drive(custom_path=f"./uploads/{file_name}")
-    subprocess.call(['lpr',f'./uploads/{file_name}'])
-    return update.effective_user
+    accepted_extensions = ['jpg','jpeg','png','txt','pdf'] 
+    file_ext = file_name.split(".")[-1] 
+    file_save_path =f"./uploads/{file_name}" 
+    if file_ext in accepted_extensions:
+        print(str(datetime.now())+" : "+"Printing Media"+file_name)
+        await update.message.reply_text(f"Printer is printing") 
+        await document.download_to_drive(custom_path=file_save_path)
+        subprocess.call(['lpr',file_save_path])
+    elif file_ext in ['docx','doc']:
+        print(str(datetime.now())+" : "+"Converting Media to PDF - "+file_name)
+        await update.message.reply_text(f"Converting to PDF") 
+        await document.download_to_drive(custom_path=f"./uploads/{file_name}")
+        li = file_save_path.rsplit(file_ext,1)
+        new_save_path = 'pdf'.join(li)
+        subprocess.call(['libreoffice','--convert-to','pdf','--outdir','./uploads',file_save_path])
+        await update.message.reply_text("Converted to PDF. Now Printing")
+        return_value = subprocess.call(['lpr',new_save_path])
+
+        print(return_value,new_save_path,file_save_path)
+        await update.message.reply_text("Printed")
+
+    else:
+        await update.message.reply_text("Extension not supported")
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
